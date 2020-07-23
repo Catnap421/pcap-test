@@ -97,13 +97,13 @@ int main(int argc, char *argv[]) {
 
     // Compile filter exp
     if(pcap_compile(handle, &fp, filter_exp, 0 , net) == -1){
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        fprintf(stderr, "Couldn't parse filter exp - %s\n", filter_exp);
         return -1;
     }
 
     // Apply filter exp
     if(pcap_setfilter(handle, &fp) == -1){
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        fprintf(stderr, "Couldn't install filter exp - %s\n", filter_exp);
         return -1;
     }
 
