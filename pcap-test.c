@@ -66,11 +66,13 @@ void print_packet_tcp(tcp* tcp_hdr){
 }
 
 void print_packet_payload(uint8_t * payload, int length){
+
     if(length == 0){
         printf("No payload\n");
     } else {
         printf("payload : ");
-        for(int i = 0 ; i < 16 && i < length; i++)
+        int print_len = length < 16 ? length : 16;
+        for(int i = 0 ; i < print_len; i++)
             printf("%02X ", payload[i]);
         printf("\n");
     }
@@ -84,26 +86,11 @@ int main(int argc, char *argv[]) {
     }
 
     char *dev = argv[1], errbuf[PCAP_ERRBUF_SIZE];
-    struct bpf_program fp;
-    char filter_exp[] = "tcp";
-    bpf_u_int32 net;
 
     // Set packet capture descriptor
     pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
     if(handle == NULL){
         fprintf(stderr, "pcap_open_live(%s) return nullptr - %s\n", dev, errbuf);
-        return -1;
-    }
-
-    // Compile filter exp
-    if(pcap_compile(handle, &fp, filter_exp, 0 , net) == -1){
-        fprintf(stderr, "Couldn't parse filter exp - %s\n", filter_exp);
-        return -1;
-    }
-
-    // Apply filter exp
-    if(pcap_setfilter(handle, &fp) == -1){
-        fprintf(stderr, "Couldn't install filter exp - %s\n", filter_exp);
         return -1;
     }
 
@@ -117,13 +104,16 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        printf("%u bytes captured\n", header->caplen);
-
         ether * eth_hdr = (ether *)packet;
+        if(ntohs(eth_hdr->ether_type) != 0x0800) continue;
+
         ipv4 * ip_hdr = (ipv4 *)(packet + sizeof(ether));
+        if(ip_hdr->ip_p != 0x06) continue;
+
         tcp * tcp_hdr = (tcp *)(packet + sizeof(ether) + sizeof(ipv4));
         uint8_t * payload = (uint8_t *)(packet + sizeof(ether) + sizeof(ipv4) + sizeof(tcp));
 
+        printf("%u bytes captured\n", header->caplen);
         print_packet_ether(eth_hdr);
         print_packet_ip(ip_hdr);
         print_packet_tcp(tcp_hdr);
